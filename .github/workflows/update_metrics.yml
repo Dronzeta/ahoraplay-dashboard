@@ -28,9 +28,10 @@ jobs:
         METRICOOL_TOKEN: ${{ secrets.METRICOOL_TOKEN }}
       run: python data_engine.py
 
-    - name: Commit and push if data changed
+      - name: Commit and push if data changed
       run: |
         git config --global user.name 'GitHub Action Bot'
         git config --global user.email 'action@github.com'
-        git add metricool_data.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Daily Metrics Update: $(date)" && git push)
+        git add .  # <-- USAR EL PUNTO PARA AÑADIR TODO LO QUE HAYA CAMBIADO
+        git commit -m "Daily Metrics Update: $(date)" || echo "No changes to commit"
+        git push
