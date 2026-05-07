@@ -2,10 +2,8 @@ name: Update Social Media Metrics Daily
 
 on:
   schedule:
-    # 11:00 UTC es igual a las 08:00 AM en Argentina (UTC-3)
-    # Se ejecuta todos los días (*)
     - cron: '0 11 * * *'
-  workflow_dispatch: # Esto te permite darle al botón "Run" manualmente si quieres
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,14 +14,14 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/set-up-python@v4
+      uses: actions/setup-python@v4 # <-- AQUÍ ESTABA EL ERROR, CORREGIDO DE set-up-python A setup-python
       with:
         python-version: '3.9'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests # Solo necesitamos requests para el motor
+        pip install requests
 
     - name: Run data engine
       env:
@@ -35,5 +33,4 @@ jobs:
         git config --global user.name 'GitHub Action Bot'
         git config --global user.email 'action@github.com'
         git add metricool_data.json
-        # Solo sube el cambio si el archivo JSON cambió realmente
         git diff --quiet && git diff --staged --quiet || (git commit -m "Daily Metrics Update: $(date)" && git push)
