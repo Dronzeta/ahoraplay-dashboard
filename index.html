@@ -63,7 +63,6 @@
         .item-stat { font-weight: 700; color: var(--accent-primary); font-size: 0.9rem; white-space: nowrap; }
 
         .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
-        
         @media (max-width: 1100px) { .grid-3col { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -72,10 +71,10 @@
         <header>
             <div class="logo-area">
                 <h1>Ahora Play Dashboard</h1>
-                <p id="update-label" style="color: var(--text-dim); font-size: 0.9rem;">Cargando...</p>
+                <p id="update-label" style="color: var(--text-dim); font-size: 0.9rem;">Periodo: Actualizando...</p>
             </div>
             <div style="text-align: right">
-                <span style="color: var(--success); font-size: 0.7rem; font-weight: 700;">● SINCRONIZADO 08:00 AM</span>
+                <span style="color: var(--success); font-size: 0.7rem; font-weight: 700;">● SINCRONIZADO HOY</span>
             </div>
         </header>
 
@@ -87,22 +86,20 @@
             <div class="tab" onclick="showSection('twitter', this)">Twitter (X)</div>
         </div>
 
-        <!-- SECCIÓN: GENERAL -->
         <div id="section-summary" class="section-view active">
             <div class="summary-grid">
-                <div class="card"><span class="metric-label">Vistas Totales</span><div id="gen-views" class="metric-big">---</div></div>
-                <div class="card"><span class="metric-label">Publicaciones</span><div id="gen-posts" class="metric-big">---</div></div>
+                <div class="card"><span class="metric-label">Vistas Totales</span><div id="gen-views" class="metric-big">0</div></div>
+                <div class="card"><span class="metric-label">Publicaciones</span><div id="gen-posts" class="metric-big">84</div></div>
                 <div class="card"><span class="metric-label">Seguidores</span><div id="gen-followers" class="metric-big">425.8k</div></div>
             </div>
             <div class="card"><h3>Evolución de Tráfico</h3><canvas id="mainChart"></canvas></div>
         </div>
 
-        <!-- SECCIÓN: YOUTUBE -->
         <div id="section-youtube" class="section-view">
             <div class="summary-grid">
-                <div class="card"><span class="metric-label">Suscriptores</span><div id="yt-subs" class="metric-big">214,200</div></div>
-                <div class="card"><span class="metric-label">Watch Minutes</span><div id="yt-watch" class="metric-big">---</div></div>
-                <div class="card"><span class="metric-label">Vistas YouTube</span><div id="yt-views" class="metric-big">---</div></div>
+                <div class="card"><span class="metric-label">Suscriptores</span><div class="metric-big">214,200</div></div>
+                <div class="card"><span class="metric-label">Watch Minutes</span><div id="yt-watch" class="metric-big">0</div></div>
+                <div class="card"><span class="metric-label">Vistas YouTube</span><div id="yt-views" class="metric-big">0</div></div>
             </div>
             <div class="grid-3col">
                 <div class="card"><h3>Top Videos</h3><div id="yt-videos-ranking"></div></div>
@@ -111,26 +108,25 @@
             </div>
         </div>
 
-        <!-- TIKTOK, IG, TW SECCIONES SIMPLIFICADAS -->
         <div id="section-tiktok" class="section-view">
             <div class="summary-grid">
-                <div class="card"><span class="metric-label">Vistas TikTok</span><div id="tt-views" class="metric-big">---</div></div>
-                <div class="card"><span class="metric-label">Finalización</span><div id="tt-completion" class="metric-big">---</div></div>
+                <div class="card"><span class="metric-label">Vistas TikTok</span><div id="tt-views" class="metric-big">0</div></div>
+                <div class="card"><span class="metric-label">Finalización</span><div id="tt-completion" class="metric-big">0%</div></div>
             </div>
             <div class="card"><h3>Top Videos TikTok</h3><div id="tt-ranking"></div></div>
         </div>
 
         <div id="section-instagram" class="section-view">
             <div class="summary-grid">
-                <div class="card"><span class="metric-label">Reach</span><div id="ig-reach" class="metric-big">---</div></div>
-                <div class="card"><span class="metric-label">Interacciones</span><div id="ig-interactions" class="metric-big">---</div></div>
+                <div class="card"><span class="metric-label">Reach</span><div id="ig-reach" class="metric-big">0</div></div>
+                <div class="card"><span class="metric-label">Interacciones</span><div id="ig-interactions" class="metric-big">0</div></div>
             </div>
         </div>
 
         <div id="section-twitter" class="section-view">
             <div class="summary-grid">
-                <div class="card"><span class="metric-label">Impresiones</span><div id="tw-impressions" class="metric-big">---</div></div>
-                <div class="card"><span class="metric-label">Retweets</span><div id="tw-retweets" class="metric-big">---</div></div>
+                <div class="card"><span class="metric-label">Impresiones</span><div id="tw-impressions" class="metric-big">0</div></div>
+                <div class="card"><span class="metric-label">Retweets</span><div id="tw-retweets" class="metric-big">0</div></div>
             </div>
             <div class="card"><h3>Top 5 Retweets</h3><div id="tw-rt-ranking"></div></div>
         </div>
@@ -142,40 +138,34 @@
             const d = window.metricoolData;
             const details = d.details || {};
 
-            document.getElementById('update-label').innerText = `Periodo: ${d.last_update || 'Actualizado'}`;
+            document.getElementById('update-label').innerText = `Periodo: ${d.last_update || 'Hoy'}`;
             
-            // General
             let totalV = (details.youtube?.total_views || 0) + (details.tiktok?.total_views || 0);
             document.getElementById('gen-views').innerText = totalV.toLocaleString();
-            document.getElementById('gen-posts').innerText = "84";
 
-            // YouTube
             if (details.youtube) {
-                document.getElementById('yt-watch').innerText = `${(details.youtube.watch_time / 1000).toFixed(1)}k`;
+                document.getElementById('yt-watch').innerText = `${((details.youtube.watch_time || 0) / 1000).toFixed(1)}k`;
                 document.getElementById('yt-views').innerText = (details.youtube.total_views || 0).toLocaleString();
                 fillRanking('yt-videos-ranking', details.youtube.videos || []);
                 fillRanking('yt-shorts-ranking', (details.youtube.shorts || []).map(s => ({title: s.title, val: `${s.views.toLocaleString()} v`})));
                 fillRanking('yt-vivos-ranking', [
                     {title: "MAXI MEDIODÍA", val: "42m prom."},
                     {title: "SERRUCHO ECONÓMICO", val: "38m prom."},
-                    {title: "CIERRE DE MERCADO", val: "35m prom."},
-                    {title: "ENEMIGOS DEL REY", val: "31m prom."},
-                    {title: "NUEVO DINERO", val: "28m prom."}
+                    {title: "CIERRE DE MERCADO", val: "35m prom."}
                 ]);
             }
 
-            // TikTok
             if (details.tiktok) {
                 document.getElementById('tt-views').innerText = (details.tiktok.total_views || 0).toLocaleString();
                 document.getElementById('tt-completion').innerText = `${(details.tiktok.avg_completion || 0).toFixed(1)}%`;
                 fillRanking('tt-ranking', (details.tiktok.top_posts || []).map(p => ({title: p.title || "Video", val: `${p.viewCount.toLocaleString()} v`})));
             }
 
-            // IG & TW
             if (details.instagram) {
                 document.getElementById('ig-reach').innerText = (details.instagram.reach || 0).toLocaleString();
                 document.getElementById('ig-interactions').innerText = (details.instagram.interactions || 0).toLocaleString();
             }
+            
             if (details.twitter) {
                 document.getElementById('tw-impressions').innerText = (details.twitter.impressions || 0).toLocaleString();
                 document.getElementById('tw-retweets').innerText = (details.twitter.retweets || 0).toLocaleString();
@@ -207,7 +197,7 @@
         function fillRanking(id, data) {
             const el = document.getElementById(id);
             if (!el) return;
-            el.innerHTML = data.map(item => `<div class="ranking-item"><span class="item-title">${item.title}</span><span class="item-stat">${item.val}</span></div>`).join('');
+            el.innerHTML = data.length > 0 ? data.map(item => `<div class="ranking-item"><span class="item-title">${item.title}</span><span class="item-stat">${item.val}</span></div>`).join('') : '<p style="color:var(--text-dim); font-size:0.8rem">Sin datos para este periodo</p>';
         }
 
         window.onload = updateUI;
