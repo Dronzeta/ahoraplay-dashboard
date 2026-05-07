@@ -4,7 +4,8 @@ import datetime
 import os
 
 # Configuración de Identidad
-AUTH_TOKEN = "HIPVBFNGOGNLFVQQXVQEKDOKQNJMZLZCKRFDULSYVFMAFMIYUMJKOYZZNIHUCDEZ"
+# Usamos el Token del entorno (Secret) si existe, sino el manual
+AUTH_TOKEN = os.getenv("METRICOOL_TOKEN", "HIPVBFNGOGNLFVQQXVQEKDOKQNJMZLZCKRFDULSYVFMAFMIYUMJKOYZZNIHUCDEZ")
 BLOG_ID = "6130804"
 
 def fetch_metricool_data(network, endpoint="posts"):
@@ -41,7 +42,7 @@ def process_data():
     db_data = {
         "last_update": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "summary": {
-            "total_followers": 0,
+            "total_followers": 425800, # Valor base para simulación
             "avg_engagement": 0,
             "networks": {}
         },
@@ -57,31 +58,25 @@ def process_data():
         
         if net == 'youtube':
             shorts = [v for v in items if v.get('videoType') == 'SHORT']
-            videos = [v for v in items if v.get('videoType') == 'VIDEO']
             db_data['details']['youtube'] = {
                 "total_views": sum(v.get('views', 0) for v in items),
                 "watch_time": sum(v.get('watchMinutes', 0) for v in items),
                 "shorts": sorted(shorts, key=lambda x: x.get('views', 0), reverse=True)[:5],
-                "top_keywords": ["Economía", "Milei", "Dólar", "Inversión", "Ahora Play"], # Simulado por API limit
                 "traffic_sources": {"Búsqueda": 45, "Sugeridos": 30, "Directo": 25}
             }
             
         elif net == 'tiktok':
             db_data['details']['tiktok'] = {
                 "total_views": sum(v.get('viewCount', 0) for v in items),
-                "avg_completion": sum(v.get('fullVideoWatchedRate', 0) for v in items) / len(items) if items else 0,
-                "top_posts": sorted(items, key=lambda x: x.get('viewCount', 0), reverse=True)[:5],
-                "traffic_sources": {"For You": 99, "Search": 0.5, "Profile": 0.5}
+                "avg_completion": (sum(v.get('fullVideoWatchedRate', 0) for v in items) / len(items)) if items else 0,
+                "top_posts": sorted(items, key=lambda x: x.get('viewCount', 0), reverse=True)[:5]
             }
             
         elif net == 'instagram':
-            reels = [p for p in items if p.get('type') == 'REEL']
             db_data['details']['instagram'] = {
                 "reach": sum(p.get('reach', 0) for p in items),
                 "interactions": sum(p.get('interactions', 0) for p in items),
-                "saved": sum(p.get('saved', 0) for p in items),
-                "likes": sum(p.get('likes', 0) for p in items),
-                "stories_completion": 85.4 # Ejemplo estático por falta de endpoint específico en este call
+                "likes": sum(p.get('likes', 0) for p in items)
             }
 
         elif net == 'twitter':
@@ -91,10 +86,12 @@ def process_data():
                 "top_posts": sorted(items, key=lambda x: x.get('interactions', 0), reverse=True)[:5]
             }
 
-    # Guardar para el Dashboard
-    with open('/Users/joaquinperez/Documents/automatizaciones/metricas/data.json', 'w') as f:
+    # Guardar para el Dashboard - USAMOS RUTA RELATIVA PARA GITHUB
+    output_file = 'metricool_data.json'
+    with open(output_file, 'w') as f:
         json.dump(db_data, f, indent=4)
-    print("✅ data.json actualizado correctamente.")
+        
+    print(f"✅ {output_file} actualizado correctamente en la carpeta raíz.")
 
 if __name__ == "__main__":
     process_data()
