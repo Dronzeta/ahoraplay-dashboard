@@ -14,7 +14,8 @@ def fetch_metricool_data(network, endpoint="posts"):
     date_from = seven_days_ago.strftime("%Y-%m-%dT00:00:00")
     date_to = today.strftime("%Y-%m-%dT23:59:59")
     
-    url = f"https://api.metricool.com/api/v1/analytics/{network}/{endpoint}?blogId={BLOG_ID}&from={date_from}&to={date_to}"
+    # CORRECCIÓN: El dominio correcto es app.metricool.com (no api.metricool.com)
+    url = f"https://app.metricool.com/api/v1/analytics/{network}/{endpoint}?blogId={BLOG_ID}&from={date_from}&to={date_to}"
     
     print(f"🔍 Consultando: {network}...")
     
@@ -26,19 +27,15 @@ def fetch_metricool_data(network, endpoint="posts"):
             res_body = response.read().decode()
             res_json = json.loads(res_body)
             
-            # DIAGNÓSTICO: Ver qué trae la API
             if 'data' in res_json:
                 count = len(res_json['data'])
                 print(f"✅ {network}: Recibidos {count} registros.")
             else:
-                print(f"⚠️ {network}: No hay campo 'data'. Respuesta: {res_body[:100]}")
+                print(f"⚠️ {network}: No hay campo 'data' en la respuesta.")
                 
             return res_json
-    except urllib.error.HTTPError as e:
-        print(f"❌ Error HTTP en {network}: {e.code} - {e.reason}")
-        return None
     except Exception as e:
-        print(f"❌ Error inesperado en {network}: {e}")
+        print(f"❌ Error en {network}: {e}")
         return None
 
 def process_data():
@@ -59,7 +56,7 @@ def process_data():
             db_data['details']['youtube'] = {
                 "total_views": sum(v.get('views', 0) for v in items),
                 "watch_time": sum(v.get('watchMinutes', 0) for v in items),
-                "videos": sorted([{"title": v.get('title', 'Video'), "val": f"{v.get('views',0)} v"} for v in items if v.get('videoType') == 'VIDEO'], key=lambda x: int(x['val'].split()[0]), reverse=True)[:6],
+                "videos": sorted([{"title": v.get('title', 'Video'), "val": f"{v.get('views',0)} v"} for v in items if v.get('videoType') == 'VIDEO'], key=lambda x: int(x['val'].split()[0]) if x['val'].split()[0].isdigit() else 0, reverse=True)[:6],
                 "shorts": sorted(items, key=lambda x: x.get('views', 0), reverse=True)[:5]
             }
         elif net == 'tiktok':
