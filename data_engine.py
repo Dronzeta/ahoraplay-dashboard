@@ -10,78 +10,67 @@ BLOG_ID = "6130804"
 def fetch_metricool_data(network, endpoint="posts"):
     today = datetime.datetime.now()
     seven_days_ago = today - datetime.timedelta(days=7)
-    
     date_from = seven_days_ago.strftime("%Y-%m-%dT00:00:00")
     date_to = today.strftime("%Y-%m-%dT23:59:59")
     
-    # CORRECCIÓN: El dominio correcto es app.metricool.com (no api.metricool.com)
+    # URL oficial de la API de Metricool
     url = f"https://app.metricool.com/api/v1/analytics/{network}/{endpoint}?blogId={BLOG_ID}&from={date_from}&to={date_to}"
     
-    print(f"🔍 Consultando: {network}...")
-    
+    print(f"🔍 Consultando {network}...")
     req = urllib.request.Request(url)
     req.add_header("X-Mc-Auth", AUTH_TOKEN)
     
     try:
         with urllib.request.urlopen(req) as response:
-            res_body = response.read().decode()
-            res_json = json.loads(res_body)
-            
-            if 'data' in res_json:
-                count = len(res_json['data'])
-                print(f"✅ {network}: Recibidos {count} registros.")
-            else:
-                print(f"⚠️ {network}: No hay campo 'data' en la respuesta.")
-                
-            return res_json
+            res_json = json.loads(response.read().decode())
+            data_list = res_json.get('data', [])
+            print(f"✅ {network}: {len(data_list)} registros encontrados.")
+            return data_list
     except Exception as e:
         print(f"❌ Error en {network}: {e}")
-        return None
+        return []
 
 def process_data():
     networks = ['youtube', 'tiktok', 'instagram', 'twitter']
-    raw_data = {net: fetch_metricool_data(net) for net in networks}
+    results = {net: fetch_metricool_data(net) for net in networks}
     
     db_data = {
         "last_update": datetime.datetime.now().strftime("%d %b, %H:%M"),
         "details": {}
     }
     
-    for net, data in raw_data.items():
-        if not data or 'data' not in data: continue
-        items = data['data']
-        if not items: continue
-        
-        if net == 'youtube':
-            db_data['details']['youtube'] = {
-                "total_views": sum(v.get('views', 0) for v in items),
-                "watch_time": sum(v.get('watchMinutes', 0) for v in items),
-                "videos": sorted([{"title": v.get('title', 'Video'), "val": f"{v.get('views',0)} v"} for v in items if v.get('videoType') == 'VIDEO'], key=lambda x: int(x['val'].split()[0]) if x['val'].split()[0].isdigit() else 0, reverse=True)[:6],
-                "shorts": sorted(items, key=lambda x: x.get('views', 0), reverse=True)[:5]
-            }
-        elif net == 'tiktok':
-            db_data['details']['tiktok'] = {
-                "total_views": sum(v.get('viewCount', 0) for v in items),
-                "avg_completion": (sum(v.get('fullVideoWatchedRate', 0) for v in items) / len(items)) if items else 0,
-                "top_posts": sorted(items, key=lambda x: x.get('viewCount', 0), reverse=True)[:5]
-            }
-        elif net == 'instagram':
-            db_data['details']['instagram'] = {
-                "reach": sum(p.get('reach', 0) for p in items),
-                "interactions": sum(p.get('interactions', 0) for p in items)
-            }
-        elif net == 'twitter':
-            db_data['details']['twitter'] = {
-                "impressions": sum(p.get('impressions', 0) for p in items),
-                "retweets": sum(p.get('retweets', 0) or p.get('shares', 0) for p in items),
-                "top_posts": sorted(items, key=lambda x: x.get('interactions', 0), reverse=True)[:5]
-            }
+    # Procesar YouTube
+    yt = results.get('youtube', [])
+    if yt:
+        db_data['details']['youtube'] = {
+            "total_views": sum(v.get('views', 0) for v in yt),
+            "watch_time": sum(v.get('watchMinutes', 0) for v in yt),
+            "videos": sorted([{"title": v.get('title', 'Video'), "val": f"{v.get('views', 0)} v"} for v in yt if v.get('videoType') == 'VIDEO'], key=lambda x: int(x['val'].split()[0]), reverse=True)[:6],
+            "shorts": sorted([{"title": v.get('title', 'Short'), "val": f"{v.get('views', 0)} v"} for v in yt if v.get('videoType') == 'SHORT'], key=lambda x: int(x['val'].split()[0]), reverse=True)[:5]
+        }
 
-    output_js = 'metricool_data.js'
-    with open(output_js, 'w', encoding='utf-8') as f:
+    # Procesar TikTok
+    tt = results.get('tiktok', [])
+    if tt:
+        db_data['details']['tiktok'] = {
+            "total_views": sum(v.get('viewCount', 0) for v in tt),
+            "avg_completion": (sum(v.get('fullVideoWatchedRate', 0) for v in tt) / len(tt)) if tt else 0,
+            "top_posts": sorted([{"title": v.get('title') or "Video TikTok", "val": f"{v.get('viewCount', 0)} v"} for v in tt], key=lambda x: int(x['val'].split()[0]), reverse=True)[:5]
+        }
+
+    # Procesar Instagram
+    ig = results.get('instagram', [])
+    if ig:
+        db_data['details']['instagram'] = {
+            "reach": sum(v.get('reach', 0) for v in ig),
+            "interactions": sum(v.get('interactions', 0) for v in ig)
+        }
+
+    # Guardar como JS
+    with open('metricool_data.js', 'w', encoding='utf-8') as f:
         f.write(f"window.metricoolData = {json.dumps(db_data, indent=4, ensure_ascii=False)};")
     
-    print(f"🚀 Dashboard generado con datos de {list(db_data['details'].keys())}")
+    print("🚀 Dashboard actualizado correctamente.")
 
 if __name__ == "__main__":
     process_data()
