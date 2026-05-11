@@ -1,5 +1,5 @@
 window.metricoolData = {
-    "last_update": "11 May, 19:16",
+    "last_update": "11 May, 19:23",
     "details": {
         "youtube": {
             "total_views": 0,
