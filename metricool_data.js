@@ -1,4 +1,4 @@
 window.metricoolData = {
-    "last_update": "17 May, 11:59",
+    "last_update": "18 May, 14:29",
     "details": {}
 };
